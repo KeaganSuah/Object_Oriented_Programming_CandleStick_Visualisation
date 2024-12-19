@@ -46,41 +46,65 @@ void weatherMain::printHelp()
 
 void weatherMain::getFilter()
 {
-    int countryCodeStr = 2;
-    int date = 1;
-    std::vector<weatherDataEntry> weatherVectors;
-
     const std::string csvFilename = "weather_data_EU_1980-2019_temp_only.csv";
 
     // Handle Min, Max, and Mean CSV files
-    auto datasets = CSVReader::handleMinMaxMeanFiles(csvFilename);
+    std::vector<std::vector<std::vector<std::string>>> datasets = CSVReader::handleMinMaxMeanFiles(csvFilename);
 
     // Extract datasets
-    auto minData = datasets[0];
-    auto maxData = datasets[1];
-    auto meanData = datasets[2];
+    std::vector<std::vector<std::string>> minData = datasets[0];
+    std::vector<std::vector<std::string>> maxData = datasets[1];
+    std::vector<std::vector<std::string>> meanData = datasets[2];
 
-    weatherDataEntry weatherData{
-        minData[date][0],                          // Keep the timestamp as is
-        std::stod(minData[date][countryCodeStr]),  // Convert to double
-        std::stod(minData[date][countryCodeStr]),  // Convert to double
-        std::stod(maxData[date][countryCodeStr]),  // Convert to double
-        std::stod(meanData[date][countryCodeStr]), // Convert to double
-        weatherDataEntry::intToCountryType(countryCodeStr)};
+    std::vector<weatherDataEntry> weatherVectors;
+    int country = 1;
 
-    weatherVectors.push_back(weatherData);
-
-    for (weatherDataEntry &value : weatherVectors)
+    // Loop through each row of the datasets
+    for (size_t date = 0; date < minData.size(); ++date)
     {
-        // Print the timestamp
-        std::cout << "timestamp: " << value.timestamp << std::endl;
-        std::cout << ":open " << value.open << std::endl;
-        std::cout << ":close " << value.close << std::endl;
-        std::cout << "high: " << value.high << std::endl;
-        std::cout << "low: " << value.low << std::endl;
-        std::cout << "Timestamp: " << weatherDataEntry::countryToString(value.country) << std::endl;
+        int close_amount;
+        if (date == 0)
+        {
+            close_amount = 0;
+        }
+        else
+        {
+            close_amount = date - 1;
+        }
+
+        try
+        {
+            // Create a weatherDataEntry object for the current row
+            weatherDataEntry weatherData{
+                minData[date][0],
+                std::stod(meanData[date][country]),
+                std::stod(maxData[date][country]),
+                std::stod(minData[date][country]),
+                std::stod(meanData[close_amount][country]),
+                weatherDataEntry::intToCountryType(country)};
+
+            // Add the object to the weatherVectors
+            weatherVectors.push_back(weatherData);
+        }
+        catch (const std::exception &e)
+        {
+            // Handle any potential errors during conversion or access
+            std::cerr << "Error processing row " << date << ": " << e.what() << std::endl;
+        }
+    }
+
+    // Print the collected weatherDataEntries (optional)
+    for (auto &entry : weatherVectors)
+    {
+        std::cout << "Country: " << weatherDataEntry::countryToString(entry.country) << ", "
+                  << "Date: " << entry.timestamp << ", "
+                  << "High: " << entry.high << ", "
+                  << "Open: " << entry.open << ", "
+                  << "Close: " << entry.close << ", "
+                  << "Low: " << entry.low << std::endl;
     }
 };
+
 void weatherMain::showTableStats() {};
 void weatherMain::showCandlestick() {};
 void weatherMain::getPrediction() {};

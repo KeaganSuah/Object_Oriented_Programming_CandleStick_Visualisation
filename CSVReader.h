@@ -21,5 +21,4 @@ private:
     // Function to check if a file exists
     static bool fileExists(const std::string &filename);
     static std::vector<std::string> tokenise(std::string csvLine, char separator);
-    // static weatherDataEntry stringsToWDE(std::vector<std::string> strings);
 };
