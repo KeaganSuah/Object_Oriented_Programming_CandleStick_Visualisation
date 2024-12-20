@@ -1,6 +1,6 @@
 #pragma once
 
-#include "weatherDataEntry.h"
+#include "candleStick.h"
 #include <vector>
 #include <string>
 
@@ -8,6 +8,7 @@ class CSVReader
 {
 public:
     CSVReader();
+    static std::vector<std::string> tokenise(std::string csvLine, char separator);
     // Function to handle min, max, mean CSV files
     // Reads them if they exist; creates them using readCSV if they don't exist
     static std::vector<std::vector<std::vector<std::string>>> handleMinMaxMeanFiles(const std::string &csvFilename);
@@ -20,5 +21,4 @@ private:
     static std::vector<std::vector<std::string>> readExistingCSV(const std::string &filename);
     // Function to check if a file exists
     static bool fileExists(const std::string &filename);
-    static std::vector<std::string> tokenise(std::string csvLine, char separator);
 };

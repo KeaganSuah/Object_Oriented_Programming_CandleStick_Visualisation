@@ -1,5 +1,7 @@
 #pragma once
 
+#include "candleStick.h"
+#include "filterCandlestick.h"
 #include <vector>
 
 class weatherMain
@@ -12,10 +14,14 @@ public:
 private:
     void printMenu();
     void printHelp();
-    void getFilter();
+    void getFilter(std::vector<std::vector<std::vector<std::string>>> datasets);
     void showTableStats();
     void showCandlestick();
     void getPrediction();
     int getUserOption();
-    void processUserOption(int userOption);
+    void processUserOption(int userOption, std::vector<std::vector<std::vector<std::string>>> datasets);
+
+    // Private Variables
+    std::vector<candleStick> vectorOfCandlesticks;
+    filterCandlestick UserFiltered;
 };
