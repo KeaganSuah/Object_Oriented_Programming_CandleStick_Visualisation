@@ -1,6 +1,7 @@
 #include "weatherMain.h"
 #include "CSVReader.h"
 #include "filterCandlestick.h"
+#include "visualisation.h"
 #include <iostream>
 #include <vector>
 
@@ -132,42 +133,8 @@ void weatherMain::showCandlestick()
     }
     else
     {
-        int startTemp = UserFiltered.startTemp;
-        int endTemp = UserFiltered.endTemp;
-        while (startTemp >= endTemp)
-        {
-            int blankCount = 0;
-            while (blankCount < (4 - std::to_string(startTemp).size()))
-            {
-                std::cout << " ";
-                ++blankCount;
-            }
-            std::cout << startTemp << ":  ";
-            for (auto &candleStick : vectorOfCandlesticks)
-            {
-                double minVal = (candleStick.open < candleStick.close) ? candleStick.open : candleStick.close; // Minimum
-                double maxVal = (candleStick.open > candleStick.close) ? candleStick.open : candleStick.close; // Maximum
-
-                if (startTemp <= candleStick.high & startTemp > maxVal)
-                {
-                    std::cout << "| ";
-                }
-                else if (startTemp <= maxVal & startTemp > minVal)
-                {
-                    std::cout << "█ ";
-                }
-                else if (startTemp < minVal & startTemp > candleStick.low)
-                {
-                    std::cout << "| ";
-                }
-                else
-                {
-                    std::cout << "· ";
-                }
-            }
-            std::cout << std::endl;
-            --startTemp;
-        }
+        visualisation vis;
+        vis.displayChunks(vectorOfCandlesticks, UserFiltered);
     }
 }
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 
+// Constructor
 filterCandlestick::filterCandlestick(std::string _country,
                                      std::string _startDate,
                                      std::string _endDate,
@@ -11,8 +12,261 @@ filterCandlestick::filterCandlestick(std::string _country,
       startDate(_startDate),
       endDate(_endDate),
       startTemp(_startTemp),
-      endTemp(_endTemp) {
-      };
+      endTemp(_endTemp) {}
+
+// Helper function to calculate min, max, and mean
+void filterCandlestick::calculateStats(const std::vector<std::vector<std::string>> &minData,
+                                       const std::vector<std::vector<std::string>> &maxData,
+                                       const std::vector<std::vector<std::string>> &meanData,
+                                       int country,
+                                       size_t date,
+                                       double &totalMin,
+                                       double &totalMax,
+                                       double &totalMean,
+                                       int &totalEntries)
+{
+    try
+    {
+        double minValue = std::stod(minData[date][country]);
+        double maxValue = std::stod(maxData[date][country]);
+        double meanValue = std::stod(meanData[date][country]);
+
+        totalMin = std::min(totalMin, minValue);
+        totalMax = std::max(totalMax, maxValue);
+        totalMean += meanValue;
+        totalEntries++;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error processing row " << date << ": " << e.what() << std::endl;
+    }
+}
+
+// Helper function to determine which format to process
+void filterCandlestick::processFormat(const std::vector<std::vector<std::string>> &minData,
+                                      const std::vector<std::vector<std::string>> &maxData,
+                                      const std::vector<std::vector<std::string>> &meanData,
+                                      std::vector<candleStick> &vectorOfCandlesticks,
+                                      int country,
+                                      const std::string &startPeriod,
+                                      const std::string &endPeriod)
+{
+    if (startPeriod.size() == 4 && endPeriod.size() == 4) // yyyy format
+    {
+        processYearlyFormat(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod);
+    }
+    else if (startPeriod.size() == 7 && endPeriod.size() == 7) // yyyy-mm format
+    {
+        processMonthlyFormat(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod);
+    }
+    else if (startPeriod.size() == 10 && endPeriod.size() == 10) // yyyy-mm-dd format
+    {
+        processDailyFormat(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod);
+    }
+}
+
+// Helper function to store data into candleStick object
+void filterCandlestick::storeToCandleStick(const std::string &period,
+                                           double totalMean,
+                                           double totalMax,
+                                           double totalMin,
+                                           double previousMean,
+                                           int country,
+                                           std::vector<candleStick> &vectorOfCandlesticks)
+{
+    try
+    {
+        candleStick weatherData{
+            period,
+            totalMean,
+            totalMax,
+            totalMin,
+            previousMean,
+            candleStick::intToCountryType(country)};
+
+        vectorOfCandlesticks.push_back(weatherData);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error processing period " << period << ": " << e.what() << std::endl;
+    }
+}
+
+// Function to process yearly format
+void filterCandlestick::processYearlyFormat(const std::vector<std::vector<std::string>> &minData,
+                                            const std::vector<std::vector<std::string>> &maxData,
+                                            const std::vector<std::vector<std::string>> &meanData,
+                                            std::vector<candleStick> &vectorOfCandlesticks,
+                                            int country,
+                                            const std::string &startPeriod,
+                                            const std::string &endPeriod)
+{
+    double totalMin = std::numeric_limits<double>::max();
+    double totalMax = std::numeric_limits<double>::lowest();
+    double totalMean = 0.0;
+    double previousMean = 0.0;
+    int totalEntries = 0;
+    std::string currentYear = "";
+
+    // Initialize previousMean
+    for (size_t date = 0; date < minData.size(); ++date)
+    {
+        std::string year = minData[date][0].substr(0, 4);
+        if (year >= startPeriod)
+        {
+            break;
+        }
+        previousMean = std::stod(meanData[date][country]);
+    }
+
+    for (size_t date = 0; date < minData.size(); ++date)
+    {
+        std::string year = minData[date][0].substr(0, 4);
+
+        if (year < startPeriod)
+        {
+            continue;
+        }
+        if (year > endPeriod)
+        {
+            break;
+        }
+
+        if (currentYear.empty())
+        {
+            currentYear = year;
+        }
+        else if (year != currentYear)
+        {
+            totalMean /= totalEntries;
+            storeToCandleStick(currentYear, totalMean, totalMax, totalMin, previousMean, country, vectorOfCandlesticks);
+
+            previousMean = totalMean;
+            currentYear = year;
+            totalMin = std::numeric_limits<double>::max();
+            totalMax = std::numeric_limits<double>::lowest();
+            totalMean = 0.0;
+            totalEntries = 0;
+        }
+
+        calculateStats(minData, maxData, meanData, country, date, totalMin, totalMax, totalMean, totalEntries);
+    }
+
+    if (totalEntries > 0)
+    {
+        totalMean /= totalEntries;
+        storeToCandleStick(currentYear, totalMean, totalMax, totalMin, previousMean, country, vectorOfCandlesticks);
+    }
+}
+
+// Function to process monthly format
+void filterCandlestick::processMonthlyFormat(const std::vector<std::vector<std::string>> &minData,
+                                             const std::vector<std::vector<std::string>> &maxData,
+                                             const std::vector<std::vector<std::string>> &meanData,
+                                             std::vector<candleStick> &vectorOfCandlesticks,
+                                             int country,
+                                             const std::string &startPeriod,
+                                             const std::string &endPeriod)
+{
+    double totalMin = std::numeric_limits<double>::max();
+    double totalMax = std::numeric_limits<double>::lowest();
+    double totalMean = 0.0;
+    double previousMean = 0.0;
+    int totalEntries = 0;
+    std::string currentMonth = "";
+
+    for (size_t date = 0; date < minData.size(); ++date)
+    {
+        std::string month = minData[date][0].substr(0, 7);
+        if (month >= startPeriod)
+        {
+            break;
+        }
+        previousMean = std::stod(meanData[date][country]);
+    }
+
+    for (size_t date = 0; date < minData.size(); ++date)
+    {
+        std::string month = minData[date][0].substr(0, 7);
+
+        if (month < startPeriod)
+        {
+            continue;
+        }
+        if (month > endPeriod)
+        {
+            break;
+        }
+
+        if (currentMonth.empty())
+        {
+            currentMonth = month;
+        }
+        else if (month != currentMonth)
+        {
+            totalMean /= totalEntries;
+            storeToCandleStick(currentMonth, totalMean, totalMax, totalMin, previousMean, country, vectorOfCandlesticks);
+
+            previousMean = totalMean;
+            currentMonth = month;
+            totalMin = std::numeric_limits<double>::max();
+            totalMax = std::numeric_limits<double>::lowest();
+            totalMean = 0.0;
+            totalEntries = 0;
+        }
+
+        calculateStats(minData, maxData, meanData, country, date, totalMin, totalMax, totalMean, totalEntries);
+    }
+
+    if (totalEntries > 0)
+    {
+        totalMean /= totalEntries;
+        storeToCandleStick(currentMonth, totalMean, totalMax, totalMin, previousMean, country, vectorOfCandlesticks);
+    }
+}
+
+// Function to process daily format
+void filterCandlestick::processDailyFormat(const std::vector<std::vector<std::string>> &minData,
+                                           const std::vector<std::vector<std::string>> &maxData,
+                                           const std::vector<std::vector<std::string>> &meanData,
+                                           std::vector<candleStick> &vectorOfCandlesticks,
+                                           int country,
+                                           const std::string &startPeriod,
+                                           const std::string &endPeriod)
+{
+    for (size_t date = 0; date < minData.size(); ++date)
+    {
+        std::string dateStr = minData[date][0].substr(0, 10);
+
+        if (dateStr < startPeriod)
+        {
+            continue;
+        }
+        if (dateStr > endPeriod)
+        {
+            break;
+        }
+
+        try
+        {
+            double closeValue = (date == 0) ? 0.0 : std::stod(meanData[date - 1][country]);
+
+            candleStick weatherData{
+                minData[date][0],
+                std::stod(meanData[date][country]),
+                std::stod(maxData[date][country]),
+                std::stod(minData[date][country]),
+                closeValue,
+                candleStick::intToCountryType(country)};
+
+            vectorOfCandlesticks.push_back(weatherData);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error processing row " << date << ": " << e.what() << std::endl;
+        }
+    }
+}
 
 std::vector<candleStick> filterCandlestick::filterDataset(std::vector<std::vector<std::vector<std::string>>> datasets)
 {
@@ -25,224 +279,21 @@ std::vector<candleStick> filterCandlestick::filterDataset(std::vector<std::vecto
 
     int country = candleStick::stringToCountryInteger(this->country);
 
-    // User specifies the range
-    std::string startPeriod = this->startDate; // Start of the range (yyyy, yyyy-mm, or yyyy-mm-dd)
-    std::string endPeriod = this->endDate;     // End of the range
+    // User-specified range
+    std::string startPeriod = this->startDate;
+    std::string endPeriod = this->endDate;
 
-    // Determine format based on the length of startPeriod and endPeriod
-    if (startPeriod.size() == 4 && endPeriod.size() == 4) // yyyy format
-    {
-        // Aggregate data for the specified range
-        double totalMin = std::numeric_limits<double>::max();
-        double totalMax = std::numeric_limits<double>::lowest();
-        double totalMean = 0.0;
-        double previousMean = 0.0;
-        int totalEntries = 0;
-        std::string currentYear = "";
-
-        for (size_t date = 0; date < minData.size(); ++date)
-        {
-            // Extract the year from the current row
-            std::string year = minData[date][0].substr(0, 4); // Extract yyyy
-
-            // Skip rows outside the specified range
-            if (year < startPeriod)
-            {
-                continue;
-            }
-            if (year > endPeriod)
-            {
-                break; // Stop processing after the endPeriod
-            }
-
-            if (currentYear.empty())
-            {
-                currentYear = year;
-            }
-            else if (year != currentYear)
-            {
-                // Finalize the previous year's data
-                totalMean /= totalEntries;
-
-                try
-                {
-                    candleStick weatherData{
-                        currentYear,
-                        totalMean,
-                        totalMax,
-                        totalMin,
-                        previousMean, // For yearly aggregation, open = close = mean
-                        candleStick::intToCountryType(country)};
-
-                    vectorOfCandlesticks.push_back(weatherData);
-                    previousMean = totalMean;
-                }
-                catch (const std::exception &e)
-                {
-                    std::cerr << "Error processing year " << currentYear << ": " << e.what() << std::endl;
-                }
-
-                // Reset for the new year
-                currentYear = year;
-                totalMin = std::numeric_limits<double>::max();
-                totalMax = std::numeric_limits<double>::lowest();
-                totalMean = 0.0;
-                totalEntries = 0;
-            }
-
-            // Aggregate data for the current year
-            try
-            {
-                double minValue = std::stod(minData[date][country]);
-                double maxValue = std::stod(maxData[date][country]);
-                double meanValue = std::stod(meanData[date][country]);
-
-                totalMin = std::min(totalMin, minValue);
-                totalMax = std::max(totalMax, maxValue);
-                totalMean += meanValue;
-                totalEntries++;
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error processing row " << date << ": " << e.what() << std::endl;
-            }
-        }
-    }
-    else if (startPeriod.size() == 7 && endPeriod.size() == 7) // yyyy-mm format
-    {
-        // Aggregate data for the specified range
-        double totalMin = std::numeric_limits<double>::max();
-        double totalMax = std::numeric_limits<double>::lowest();
-        double totalMean = 0.0;
-        double previousMean = 0.0;
-        int totalEntries = 0;
-        std::string currentMonth = "";
-        std::string currentTimestamp;
-
-        for (size_t date = 0; date < minData.size(); ++date)
-        {
-            // Extract the month from the current row
-            std::string month = minData[date][0].substr(0, 7); // Extract yyyy-mm
-
-            // Skip rows outside the specified range
-            if (month < startPeriod)
-            {
-                continue;
-            }
-            if (month > endPeriod)
-            {
-                break; // Stop processing after the endPeriod
-            }
-
-            if (currentMonth.empty())
-            {
-                currentMonth = month;
-            }
-            else if (month != currentMonth)
-            {
-                // Finalize the previous month's data
-                totalMean /= totalEntries;
-
-                try
-                {
-                    candleStick weatherData{
-                        currentMonth,
-                        totalMean,
-                        totalMax,
-                        totalMin,
-                        previousMean, // For monthly aggregation, open = close = mean
-                        candleStick::intToCountryType(country)};
-
-                    vectorOfCandlesticks.push_back(weatherData);
-                    previousMean = totalMean;
-                }
-                catch (const std::exception &e)
-                {
-                    std::cerr << "Error processing month " << currentMonth << ": " << e.what() << std::endl;
-                }
-
-                // Reset for the new month
-                currentMonth = month;
-                totalMin = std::numeric_limits<double>::max();
-                totalMax = std::numeric_limits<double>::lowest();
-                totalMean = 0.0;
-                totalEntries = 0;
-            }
-
-            // Aggregate data for the current month
-            try
-            {
-                double minValue = std::stod(minData[date][country]);
-                double maxValue = std::stod(maxData[date][country]);
-                double meanValue = std::stod(meanData[date][country]);
-
-                totalMin = std::min(totalMin, minValue);
-                totalMax = std::max(totalMax, maxValue);
-                totalMean += meanValue;
-
-                // Store the timestamp for the first entry in the month
-                if (totalEntries == 0)
-                {
-                    currentTimestamp = minData[date][0].substr(0, 10); // Use the first valid date
-                }
-
-                totalEntries++;
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error processing row " << date << ": " << e.what() << std::endl;
-            }
-        }
-    }
-    else if (startPeriod.size() == 10 && endPeriod.size() == 10) // yyyy-mm-dd format
-    {
-        // Process data directly for yyyy-mm-dd format
-        for (size_t date = 0; date < minData.size(); ++date)
-        {
-            std::string dateStr = minData[date][0].substr(0, 10); // Extract yyyy-mm-dd
-
-            // Skip rows outside the specified range
-            if (dateStr < startPeriod)
-            {
-                continue;
-            }
-            if (dateStr > endPeriod)
-            {
-                break; // Stop processing after the endPeriod
-            }
-
-            int close_amount = (date == 0) ? 0 : date - 1;
-
-            try
-            {
-                // Use 0 for the "close" value if date == 0, otherwise fetch from the dataset
-                double closeValue = (date == 0) ? 0.0 : std::stod(meanData[close_amount][country]);
-
-                candleStick weatherData{
-                    minData[date][0],                   // Timestamp
-                    std::stod(meanData[date][country]), // Open
-                    std::stod(maxData[date][country]),  // High
-                    std::stod(minData[date][country]),  // Low
-                    closeValue,                         // Close
-                    candleStick::intToCountryType(country)};
-
-                vectorOfCandlesticks.push_back(weatherData);
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error processing row " << date << ": " << e.what() << std::endl;
-            }
-        }
-    }
+    // Process based on format
+    processFormat(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod);
 
     return vectorOfCandlesticks;
-};
+}
 
 void filterCandlestick::printTable(std::vector<candleStick> vectorOfCandlesticks)
 {
-    // Print the collected weatherDataEntries
-    for (auto &entry : vectorOfCandlesticks)
+    for (size_t i = 0; i < vectorOfCandlesticks.size(); ++i)
     {
+        candleStick &entry = vectorOfCandlesticks[i];
         std::cout << "Country: " << candleStick::countryToString(entry.country) << ", "
                   << "Date: " << entry.timestamp << ", "
                   << "High: " << entry.high << ", "
@@ -250,4 +301,4 @@ void filterCandlestick::printTable(std::vector<candleStick> vectorOfCandlesticks
                   << "Close: " << entry.close << ", "
                   << "Low: " << entry.low << std::endl;
     }
-};
+}
