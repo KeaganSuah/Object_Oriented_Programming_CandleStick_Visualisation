@@ -4,10 +4,11 @@
 #include <vector>
 #include "candleStick.h"
 
+///// Class to filter and process candlestick data based on user-defined criteria. //////
 class filterCandlestick
 {
 public:
-    // Constructors
+    // Constructor to initialize the filter with user-specified criteria
     filterCandlestick(std::string country,
                       std::string startDate,
                       std::string endDate,
@@ -18,13 +19,10 @@ public:
     filterCandlestick()
         : country(""), startDate(""), endDate(""), startTemp(0), endTemp(0) {}
 
-    // Main filtering function
+    // Main function to filter the dataset
     std::vector<candleStick> filterDataset(std::vector<std::vector<std::vector<std::string>>> datasets);
 
-    // Print table
-    static void printTable(std::vector<candleStick> vectorOfCandlesticks);
-
-    // Member variables
+    // Member variables to store filter parameters
     std::string country;
     std::string startDate;
     std::string endDate;
@@ -32,20 +30,28 @@ public:
     int endTemp;
 
 private:
-    // Helper functions
-
-    // Calculate stats (min, max, mean)
+    // Helper function to calculate stats (min, max, mean)
     void calculateStats(const std::vector<std::vector<std::string>> &minData,
                         const std::vector<std::vector<std::string>> &maxData,
                         const std::vector<std::vector<std::string>> &meanData,
                         int country,
-                        size_t date,
+                        unsigned int date,
                         double &totalMin,
                         double &totalMax,
                         double &totalMean,
                         int &totalEntries);
 
-    // Process format
+    // Generalized function to process data based on granularity (year, month, day)
+    void processData(const std::vector<std::vector<std::string>> &minData,
+                     const std::vector<std::vector<std::string>> &maxData,
+                     const std::vector<std::vector<std::string>> &meanData,
+                     std::vector<candleStick> &vectorOfCandlesticks,
+                     int country,
+                     const std::string &startPeriod,
+                     const std::string &endPeriod,
+                     const std::string &granularity);
+
+    // Helper function to determine granularity and process data accordingly
     void processFormat(const std::vector<std::vector<std::string>> &minData,
                        const std::vector<std::vector<std::string>> &maxData,
                        const std::vector<std::vector<std::string>> &meanData,
@@ -54,7 +60,7 @@ private:
                        const std::string &startPeriod,
                        const std::string &endPeriod);
 
-    // Store data into candleStick object
+    // Helper function to store data into a candleStick object
     void storeToCandleStick(const std::string &period,
                             double totalMean,
                             double totalMax,
@@ -62,29 +68,4 @@ private:
                             double previousMean,
                             int country,
                             std::vector<candleStick> &vectorOfCandlesticks);
-
-    // Processing functions
-    void processYearlyFormat(const std::vector<std::vector<std::string>> &minData,
-                             const std::vector<std::vector<std::string>> &maxData,
-                             const std::vector<std::vector<std::string>> &meanData,
-                             std::vector<candleStick> &vectorOfCandlesticks,
-                             int country,
-                             const std::string &startPeriod,
-                             const std::string &endPeriod);
-
-    void processMonthlyFormat(const std::vector<std::vector<std::string>> &minData,
-                              const std::vector<std::vector<std::string>> &maxData,
-                              const std::vector<std::vector<std::string>> &meanData,
-                              std::vector<candleStick> &vectorOfCandlesticks,
-                              int country,
-                              const std::string &startPeriod,
-                              const std::string &endPeriod);
-
-    void processDailyFormat(const std::vector<std::vector<std::string>> &minData,
-                            const std::vector<std::vector<std::string>> &maxData,
-                            const std::vector<std::vector<std::string>> &meanData,
-                            std::vector<candleStick> &vectorOfCandlesticks,
-                            int country,
-                            const std::string &startPeriod,
-                            const std::string &endPeriod);
 };

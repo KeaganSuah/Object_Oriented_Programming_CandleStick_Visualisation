@@ -5,18 +5,29 @@
 #include "candleStick.h"
 #include "filterCandlestick.h"
 
+///// Class for visualising weather data as candlesticks. //////
 class visualisation
 {
 public:
+    // Constructor to initialise the visualisation class
     visualisation();
 
-    void displayChunks(const std::vector<candleStick> &vectorOfCandlesticks,
-                       const filterCandlestick &UserFiltered,
-                       size_t chunkSize = 40);
+    // Display candlesticks graphically in chunks
+    static void displayCandleSticks(const std::vector<candleStick> &vectorOfCandlesticks,
+                                    const filterCandlestick &UserFiltered,
+                                    unsigned int chunkSize = 40);
+
+    // Display a table of candlestick data
+    static void printTable(std::vector<candleStick> vectorOfCandlesticks, filterCandlestick &UserFiltered);
 
 private:
-    void displayHeader(const filterCandlestick &UserFiltered);
-    void displayChunk(const std::vector<candleStick> &chunk,
-                      const filterCandlestick &UserFiltered);
-    void displayTimestamps(const std::vector<candleStick> &chunk);
+    // Display the header with user filter information
+    static void displayHeader(const filterCandlestick &UserFiltered);
+
+    // Display a single chunk of candlestick data
+    static void displayChunk(const std::vector<candleStick> &chunk,
+                             const filterCandlestick &UserFiltered);
+
+    // Display the timestamps of a chunk of candlestick data
+    static void displayTimestamps(const std::vector<candleStick> &chunk);
 };

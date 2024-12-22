@@ -1,39 +1,49 @@
 #include "visualisation.h"
 #include <iostream>
-#include <algorithm>
-#include <iomanip>
 
+// Constructor
+///// Code Written by myself to initialise the visualisation class. //////
 visualisation::visualisation() {}
 
-void visualisation::displayChunks(const std::vector<candleStick> &vectorOfCandlesticks,
-                                  const filterCandlestick &UserFiltered,
-                                  size_t chunkSize)
+///// Code Written by myself to display candlesticks in chunks for better readability. //////
+void visualisation::displayCandleSticks(const std::vector<candleStick> &vectorOfCandlesticks,
+                                        const filterCandlestick &UserFiltered,
+                                        unsigned int chunkSize)
 {
-    size_t totalCandlesticks = vectorOfCandlesticks.size();
-    size_t numberOfChunks = (totalCandlesticks + chunkSize - 1) / chunkSize;
+    // Calculate the total number of candlesticks and chunks
+    unsigned int totalCandlesticks = vectorOfCandlesticks.size();
+    unsigned int numberOfChunks = (totalCandlesticks + chunkSize - 1) / chunkSize;
 
-    for (size_t chunk = 0; chunk < numberOfChunks; ++chunk)
+    for (unsigned int chunk = 0; chunk < numberOfChunks; ++chunk)
     {
         if (chunk == 0)
         {
+            // Display the header for the first chunk
             displayHeader(UserFiltered);
+            std::cout << "Candlestick Visualisation for Weather Data" << std::endl;
         }
         else
         {
+            // Indicate continuation for subsequent chunks
             std::cout << "The visualisation continues below:" << std::endl
                       << std::endl;
         }
 
-        size_t startIndex = chunk * chunkSize;
-        size_t endIndex = std::min(startIndex + chunkSize, totalCandlesticks);
+        // Determine the range of candlesticks to display in the current chunk
+        unsigned int startIndex = chunk * chunkSize;
+        unsigned int endIndex = (startIndex + chunkSize < totalCandlesticks) ? startIndex + chunkSize : totalCandlesticks;
+
+        // Extract the current chunk of candlesticks
         std::vector<candleStick> currentChunk(vectorOfCandlesticks.begin() + startIndex, vectorOfCandlesticks.begin() + endIndex);
 
+        // Display the chunk
         displayChunk(currentChunk, UserFiltered);
         displayTimestamps(currentChunk);
         std::cout << std::endl;
     }
 }
 
+///// Code Written by myself to display the header with user-defined filter information. //////
 void visualisation::displayHeader(const filterCandlestick &UserFiltered)
 {
     std::cout << std::endl
@@ -46,54 +56,79 @@ void visualisation::displayHeader(const filterCandlestick &UserFiltered)
               << std::endl;
 }
 
+///// Code Written by myself to display a single chunk of candlestick data graphically. //////
 void visualisation::displayChunk(const std::vector<candleStick> &chunk,
                                  const filterCandlestick &UserFiltered)
 {
-    int currentStartTemp = UserFiltered.startTemp;
+    // Start from the highest temperature in the user's filter
+    int currentTemp = UserFiltered.endTemp;
 
-    while (currentStartTemp >= UserFiltered.endTemp)
+    while (currentTemp >= UserFiltered.startTemp)
     {
-        std::cout << std::setw(4) << currentStartTemp << ":  ";
-        for (const auto &candleStick : chunk)
-        {
-            double minVal = std::min(candleStick.open, candleStick.close);
-            double maxVal = std::max(candleStick.open, candleStick.close);
+        unsigned int blankCount = 0;
 
-            if (currentStartTemp <= candleStick.high && currentStartTemp > maxVal)
+        // Add padding for temperature values
+        while (blankCount < (4 - std::to_string(currentTemp).size()))
+        {
+            std::cout << " ";
+            ++blankCount;
+        }
+
+        // Display the current temperature
+        std::cout << currentTemp << ":  ";
+
+        for (const candleStick &candleStick : chunk)
+        {
+            // Determine the minimum and maximum values of the candlestick
+            double minVal = (candleStick.open < candleStick.close) ? candleStick.open : candleStick.close;
+            double maxVal = (candleStick.open > candleStick.close) ? candleStick.open : candleStick.close;
+
+            // Display graphical representation of the candlestick
+            if (currentTemp <= candleStick.high && currentTemp > maxVal)
             {
+                // Upper shadow
                 std::cout << (candleStick.open > candleStick.close ? "\033[32m| \033[0m" : "\033[31m| \033[0m");
             }
-            else if (currentStartTemp <= maxVal && currentStartTemp >= minVal ||
-                     (static_cast<int>(maxVal) == static_cast<int>(minVal) && currentStartTemp == static_cast<int>(maxVal)))
+            else if (currentTemp <= maxVal && currentTemp >= minVal ||
+                     (static_cast<int>(maxVal) == static_cast<int>(minVal) && currentTemp == static_cast<int>(maxVal)))
             {
+                // Candle body
                 std::cout << (candleStick.open > candleStick.close ? "\033[32m█ \033[0m" : "\033[31m█ \033[0m");
             }
-            else if (currentStartTemp < minVal && currentStartTemp > candleStick.low)
+            else if (currentTemp < minVal && currentTemp > candleStick.low)
             {
+                // Lower shadow
                 std::cout << (candleStick.open > candleStick.close ? "\033[32m| \033[0m" : "\033[31m| \033[0m");
             }
             else
             {
+                // Empty space
                 std::cout << "· ";
             }
         }
         std::cout << std::endl;
-        --currentStartTemp;
+        --currentTemp;
     }
 }
 
+///// Code Written by myself to display the timestamps of a chunk of candlestick data. //////
 void visualisation::displayTimestamps(const std::vector<candleStick> &chunk)
 {
-    size_t maxLength = 0;
-    for (const auto &candleStick : chunk)
+    // Find the maximum length of timestamps in the chunk
+    unsigned int maxLength = 0;
+    for (const candleStick &candleStick : chunk)
     {
-        maxLength = std::max(maxLength, candleStick.timestamp.size());
+        if (candleStick.timestamp.size() > maxLength)
+        {
+            maxLength = candleStick.timestamp.size();
+        }
     }
 
-    for (size_t i = 0; i < maxLength; ++i)
+    // Display timestamps character by character for alignment
+    for (unsigned int i = 0; i < maxLength; ++i)
     {
-        std::cout << "       "; // 6 spaces
-        for (const auto &candleStick : chunk)
+        std::cout << "       "; // Add spacing
+        for (const candleStick &candleStick : chunk)
         {
             if (i < candleStick.timestamp.size())
             {
@@ -105,5 +140,27 @@ void visualisation::displayTimestamps(const std::vector<candleStick> &chunk)
             }
         }
         std::cout << std::endl;
+    }
+}
+
+///// Code Written by myself to display candlestick data in tabular format. //////
+void visualisation::printTable(std::vector<candleStick> vectorOfCandlesticks, filterCandlestick &UserFiltered)
+{
+    // Display the header with user filter information
+    displayHeader(UserFiltered);
+
+    // Print table heading
+    std::cout << "Statistics Table for Weather Data" << std::endl;
+
+    // Loop through the candlesticks and display each entry
+    for (unsigned int i = 0; i < vectorOfCandlesticks.size(); ++i)
+    {
+        candleStick &entry = vectorOfCandlesticks[i];
+        std::cout << "Country: " << candleStick::countryToString(entry.country) << ", "
+                  << "Date: " << entry.timestamp << ", "
+                  << "High: " << entry.high << ", "
+                  << "Open: " << entry.open << ", "
+                  << "Close: " << entry.close << ", "
+                  << "Low: " << entry.low << std::endl;
     }
 }
