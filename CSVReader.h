@@ -18,13 +18,13 @@ public:
 
 private:
     // Check and regenerate missing files
-    static void checkAndGenerateFiles(const std::string &csvFilename, const std::vector<std::string> &files);
+    static void checkFilesRequired(const std::string &csvFilename, const std::vector<std::string> &files);
 
     // Read a cleaned CSV file into a 2D vector
     static std::vector<std::vector<std::string>> readCleanedCSV(const std::string &filename);
 
     // Check if a file exists
-    static bool checkFileExistence(const std::string &filename);
+    static bool checkFileExist(const std::string &filename);
 
     // Read the main raw CSV file and generate min, max, and mean files
     static void readRawCSV(const std::string &csvFilename);

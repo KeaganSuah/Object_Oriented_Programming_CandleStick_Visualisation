@@ -89,8 +89,8 @@ void visualisation::displayChunk(const std::vector<candleStick> &chunk,
                 // Upper shadow
                 std::cout << (candleStick.open > candleStick.close ? "\033[32m| \033[0m" : "\033[31m| \033[0m");
             }
-            else if (currentTemp <= maxVal && currentTemp >= minVal ||
-                     (static_cast<int>(maxVal) == static_cast<int>(minVal) && currentTemp == static_cast<int>(maxVal)))
+            else if ((currentTemp <= maxVal && currentTemp >= minVal) ||
+                     (std::round(maxVal) == std::round(minVal) && currentTemp == std::round(maxVal)))
             {
                 // Candle body
                 std::cout << (candleStick.open > candleStick.close ? "\033[32m█ \033[0m" : "\033[31m█ \033[0m");

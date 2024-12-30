@@ -14,25 +14,24 @@ std::vector<std::vector<std::vector<std::string>>> CSVReader::create2DVector(con
     const std::string meanFile = "mean.csv";
 
     // Ensure the required files exist or regenerate them
-    checkAndGenerateFiles(csvFilename, {minFile, maxFile, meanFile});
+    checkFilesRequired(csvFilename, std::vector<std::string>{minFile, maxFile, meanFile});
 
-    // Load data from the cleaned files
+    // Load data from the cleaned files and return as a 2D vector
     return {
         readCleanedCSV(minFile),
         readCleanedCSV(maxFile),
-        readCleanedCSV(meanFile)
-    };
+        readCleanedCSV(meanFile)};
 }
 
-///// Code Written by myself to check and generate missing files. //////
-void CSVReader::checkAndGenerateFiles(const std::string &csvFilename, const std::vector<std::string> &files)
+///// Code Written by myself to check and generate missing files if required. //////
+void CSVReader::checkFilesRequired(const std::string &csvFilename, const std::vector<std::string> &files)
 {
     bool missingFiles = false;
 
-    // Check for missing files
-    for (const auto &file : files)
+    // Check if any required files are missing
+    for (const std::string &file : files)
     {
-        if (!checkFileExistence(file))
+        if (!checkFileExist(file))
         {
             missingFiles = true;
             break;
@@ -44,9 +43,9 @@ void CSVReader::checkAndGenerateFiles(const std::string &csvFilename, const std:
         std::cout << "One or more files are missing. Regenerating files..." << std::endl;
 
         // Remove existing files
-        for (const auto &file : files)
+        for (const std::string &file : files)
         {
-            if (checkFileExistence(file))
+            if (checkFileExist(file))
                 std::remove(file.c_str());
         }
 
@@ -62,11 +61,13 @@ std::vector<std::vector<std::string>> CSVReader::readCleanedCSV(const std::strin
     std::ifstream file(filename);
     std::string line;
 
+    // Check if the file can be opened
     if (!file.is_open())
     {
         throw std::runtime_error("File not found: " + filename);
     }
 
+    // Read each line from the file and tokenize it into a vector
     while (std::getline(file, line))
     {
         data.push_back(tokenise(line, ','));
@@ -76,8 +77,8 @@ std::vector<std::vector<std::string>> CSVReader::readCleanedCSV(const std::strin
     return data;
 }
 
-///// Code Written by myself to check the existence of a file. //////
-bool CSVReader::checkFileExistence(const std::string &filename)
+///// Code Written by myself to check if a file exists. //////
+bool CSVReader::checkFileExist(const std::string &filename)
 {
     std::ifstream file(filename);
     return file.is_open();
@@ -89,19 +90,23 @@ void CSVReader::readRawCSV(const std::string &csvFilename)
     std::ifstream csvFile(csvFilename);
     std::string line;
 
+    // Check if the raw CSV file can be opened
     if (!csvFile.is_open())
     {
         std::cerr << "Error: Unable to open file: " << csvFilename << std::endl;
         return;
     }
 
+    // Initialize variables for processing weather data
     std::vector<double> minValues, maxValues, meanValues;
     std::string currentDate;
     int dayRowCount = 0;
 
+    // Process the CSV file line by line
     while (std::getline(csvFile, line))
     {
-        if (line.find("utc_timestamp") != std::string::npos) // Skip header
+        // Skip header row
+        if (line.find("utc_timestamp") != std::string::npos)
             continue;
 
         std::vector<std::string> weatherLine = tokenise(line, ',');
@@ -111,8 +116,10 @@ void CSVReader::readRawCSV(const std::string &csvFilename)
             continue;
         }
 
+        // Extract date from the timestamp
         std::string date = weatherLine[0].substr(0, 10);
 
+        // Check if the date has changed and finalize the previous day's data
         if (currentDate.empty())
         {
             currentDate = date;
@@ -121,6 +128,7 @@ void CSVReader::readRawCSV(const std::string &csvFilename)
         {
             computeDaysData(currentDate, minValues, maxValues, meanValues, dayRowCount);
 
+            // Reset variables for the next day's data
             minValues.clear();
             maxValues.clear();
             meanValues.clear();
@@ -128,10 +136,12 @@ void CSVReader::readRawCSV(const std::string &csvFilename)
             currentDate = date;
         }
 
+        // Process the current row
         processRow(weatherLine, minValues, maxValues, meanValues);
         dayRowCount++;
     }
 
+    // Finalize the last day's data
     if (dayRowCount > 0)
     {
         computeDaysData(currentDate, minValues, maxValues, meanValues, dayRowCount);
@@ -145,19 +155,22 @@ void CSVReader::writeVectorToCSV(const std::string &filename, const std::vector<
 {
     std::ofstream file(filename, std::ios::app);
 
+    // Check if the file can be opened for writing
     if (!file.is_open())
     {
         std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
         return;
     }
 
+    // Write each value in the vector to the file, separated by commas
     for (unsigned int i = 0; i < data.size(); ++i)
     {
         file << data[i];
         if (i < data.size() - 1)
             file << ",";
     }
-    file << "\n";
+
+    file << "\n"; // Add a newline at the end
     file.close();
 }
 
@@ -167,6 +180,7 @@ std::vector<std::string> CSVReader::tokenise(std::string csvLine, char separator
     std::vector<std::string> tokens;
     std::size_t start = 0, end;
 
+    // Extract tokens by finding the separator
     while ((end = csvLine.find(separator, start)) != std::string::npos)
     {
         if (start < end)
@@ -176,6 +190,7 @@ std::vector<std::string> CSVReader::tokenise(std::string csvLine, char separator
         start = end + 1;
     }
 
+    // Add the last token
     if (start < csvLine.length())
     {
         tokens.push_back(csvLine.substr(start));
@@ -192,6 +207,7 @@ void CSVReader::processRow(const std::vector<std::string> &row,
 {
     std::vector<std::string> subset(row.begin() + 1, row.end());
 
+    // Initialize vectors if empty
     if (minValues.empty())
     {
         minValues.resize(subset.size(), 1e9);
@@ -199,6 +215,7 @@ void CSVReader::processRow(const std::vector<std::string> &row,
         meanValues.resize(subset.size(), 0.0);
     }
 
+    // Update min, max, and mean values
     for (unsigned int i = 0; i < subset.size(); ++i)
     {
         double value = std::stod(subset[i]);
@@ -215,11 +232,13 @@ void CSVReader::computeDaysData(const std::string &date,
                                 std::vector<double> &meanValues,
                                 int dayRowCount)
 {
+    // Calculate mean values for each parameter
     for (unsigned int i = 0; i < meanValues.size(); ++i)
     {
         meanValues[i] /= dayRowCount;
     }
 
+    // Convert numerical data to strings
     std::vector<std::string> minStr, maxStr, meanStr;
     for (unsigned int i = 0; i < meanValues.size(); ++i)
     {
@@ -228,10 +247,12 @@ void CSVReader::computeDaysData(const std::string &date,
         meanStr.push_back(std::to_string(meanValues[i]));
     }
 
+    // Add the date as the first value
     minStr.insert(minStr.begin(), date);
     maxStr.insert(maxStr.begin(), date);
     meanStr.insert(meanStr.begin(), date);
 
+    // Write data to corresponding files
     writeVectorToCSV("min.csv", minStr);
     writeVectorToCSV("max.csv", maxStr);
     writeVectorToCSV("mean.csv", meanStr);

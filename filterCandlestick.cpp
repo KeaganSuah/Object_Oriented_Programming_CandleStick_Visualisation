@@ -17,7 +17,6 @@ filterCandlestick::filterCandlestick(std::string _country,
       endTemp(_endTemp) {}
 
 ///// Code Written by myself to calculate statistical data for a specific date and country. //////
-// Helper function to calculate min, max, and mean
 void filterCandlestick::calculateStats(const std::vector<std::vector<std::string>> &minData,
                                        const std::vector<std::vector<std::string>> &maxData,
                                        const std::vector<std::vector<std::string>> &meanData,
@@ -49,7 +48,6 @@ void filterCandlestick::calculateStats(const std::vector<std::vector<std::string
 }
 
 ///// Code Written by myself to determine granularity and process data accordingly. //////
-// Helper function to process data based on granularity (year, month, day)
 void filterCandlestick::processData(const std::vector<std::vector<std::string>> &minData,
                                     const std::vector<std::vector<std::string>> &maxData,
                                     const std::vector<std::vector<std::string>> &meanData,
@@ -127,7 +125,6 @@ void filterCandlestick::processData(const std::vector<std::vector<std::string>> 
 }
 
 ///// Code Written by myself to determine which format to process. //////
-// Helper function to determine the granularity (year, month, day)
 void filterCandlestick::processFormat(const std::vector<std::vector<std::string>> &minData,
                                       const std::vector<std::vector<std::string>> &maxData,
                                       const std::vector<std::vector<std::string>> &meanData,
@@ -136,22 +133,24 @@ void filterCandlestick::processFormat(const std::vector<std::vector<std::string>
                                       const std::string &startPeriod,
                                       const std::string &endPeriod)
 {
-    if (startPeriod.size() == 4 && endPeriod.size() == 4) // yyyy format
+    // yyyy format
+    if (startPeriod.size() == 4 && endPeriod.size() == 4)
     {
         processData(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod, "year");
     }
-    else if (startPeriod.size() == 7 && endPeriod.size() == 7) // yyyy-mm format
+    // yyyy-mm format
+    else if (startPeriod.size() == 7 && endPeriod.size() == 7)
     {
         processData(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod, "month");
     }
-    else if (startPeriod.size() == 10 && endPeriod.size() == 10) // yyyy-mm-dd format
+    // yyyy-mm-dd format
+    else if (startPeriod.size() == 10 && endPeriod.size() == 10)
     {
         processData(minData, maxData, meanData, vectorOfCandlesticks, country, startPeriod, endPeriod, "day");
     }
 }
 
 ///// Code Written by myself to store aggregated data into a candleStick object. //////
-// Helper function to store data into a candleStick object
 void filterCandlestick::storeToCandleStick(const std::string &period,
                                            double totalMean,
                                            double totalMax,
@@ -181,7 +180,6 @@ void filterCandlestick::storeToCandleStick(const std::string &period,
 }
 
 ///// Code Written by myself to filter the dataset based on user input. //////
-// Main function to filter the dataset
 std::vector<candleStick> filterCandlestick::filterDataset(std::vector<std::vector<std::vector<std::string>>> datasets)
 {
     std::vector<candleStick> vectorOfCandlesticks;

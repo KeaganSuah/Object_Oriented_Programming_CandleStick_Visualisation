@@ -35,6 +35,7 @@ enum class countryType
     SK,
     unknown
 };
+
 ///// Class representing a candlestick with financial data and a country type //////
 class candleStick
 {

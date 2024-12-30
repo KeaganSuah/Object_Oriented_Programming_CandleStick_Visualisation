@@ -8,32 +8,33 @@
 #include <vector>
 
 // Constructor
-///// Code Written by myself to initialise the weatherMain class. //////
+///// Code Written by myself to initialize the weatherMain class. //////
 weatherMain::weatherMain() {}
 
-///// Code Written with Coursera Assistance to initialise the application and handle the main menu loop. //////
+///// Code Written with Coursera Assistance to initialize the application and handle the main menu loop. //////
 void weatherMain::init()
 {
     // Specify the CSV file to process
     const std::string csvFilename = "weather_data_EU_1980-2019_temp_only.csv";
 
-    // Load the datasets into a 3D vector structure
+    // Load datasets from the CSV file into a 3D vector
     std::vector<std::vector<std::vector<std::string>>> datasets = CSVReader::create2DVector(csvFilename);
 
     int input;
 
-    // Continuous loop for menu options
+    // Loop to handle menu options until the user exits
     while (true)
     {
-        printMenu();                        // Display the main menu
-        input = getUserOption();            // Get user choice
-        processUserOption(input, datasets); // Process the chosen option
+        printMenu();                        // Display the menu
+        input = getUserOption();            // Get user's choice
+        processUserOption(input, datasets); // Perform the selected action
     }
 }
 
 ///// Code Written by myself to display the main menu options. //////
 void weatherMain::printMenu()
 {
+    // Print the available options for the user
     std::cout << std::endl
               << "------------------------------------------------------" << std::endl;
     std::cout << "                    Weather App Menu                  " << std::endl;
@@ -49,36 +50,44 @@ void weatherMain::printMenu()
 ///// Code Written by myself to display help information. //////
 void weatherMain::printHelp()
 {
-    std::cout << "Help - Analyse the market trends using weather data, apply filters, visualize data, "
-              << "and generate predictions to assist decision-making." << std::endl;
+    // Display a help message for the user
+    std::cout << "Help - Analyse weather trends with historical data, apply custom filters, visualise patterns, "
+              << "and predict future conditions to gain valuable insights." << std::endl;
 }
 
 ///// Code Written by myself to prompt the user for filtering parameters and validate input. //////
 void weatherMain::getFilter(std::vector<std::vector<std::vector<std::string>>> datasets)
 {
-    // Prompt the user for filter input
+    // Prompt the user for filter parameters
+    std::cout << "Select a country from (AT, BE, BG, CH, CZ, DE, DK, EE, ES, FI, FR, GB, GR, HR, HU, IE, IT, LT, LU, LV, NL, NO, PL, PT, RO, SE, SI, SK)." << std::endl;
+    std::cout << "Select starting period. Choose from following formats(YYYY-MM-DD, YYYY-MM, YYYY)" << std::endl;
+    std::cout << "Select closing period. Choose from following formats(YYYY-MM-DD, YYYY-MM, YYYY)" << std::endl;
+    std::cout << "Select lowest temperature. Enter in integer format" << std::endl;
+    std::cout << "Select highest temperature. Enter in integer format" << std::endl;
+    std::cout << std::endl;
+    std::cout << "The final format of the input: country, filter for time, starting period, ending period, lowest temperature, highest temperature" << std::endl;
     std::cout << "Enter filter parameters in CSV format (e.g., DE,2016-10,2020-12,-10,35): ";
     std::string userInput;
     std::getline(std::cin, userInput);
 
-    // Tokenize the input into components
+    // Split the input into components
     std::vector<std::string> tokens = CSVReader::tokenise(userInput, ',');
 
-    // Validate the input format
+    // Check that the correct number of parameters is provided
     if (tokens.size() != 5)
     {
         std::cerr << "\nInvalid input format. Please provide 5 values: Country, StartDate, EndDate, MinTemp, MaxTemp" << std::endl;
         return;
     }
 
-    // Assign input values to variables
+    // Extract individual filter parameters
     std::string &country = tokens[0];
     std::string &startDate = tokens[1];
     std::string &endDate = tokens[2];
     std::string &minTemp = tokens[3];
     std::string &maxTemp = tokens[4];
 
-    // Validate date formats using a regex pattern
+    // Validate the date format using regex
     const std::regex datePattern(R"(^\d{4}(-\d{2})?(-\d{2})?$)"); // yyyy, yyyy-mm, or yyyy-mm-dd
     if (!std::regex_match(startDate, datePattern) || !std::regex_match(endDate, datePattern))
     {
@@ -86,7 +95,7 @@ void weatherMain::getFilter(std::vector<std::vector<std::vector<std::string>>> d
         return;
     }
 
-    // Ensure start and end dates are in the same format
+    // Ensure start and end dates have the same format
     if (startDate.size() != endDate.size())
     {
         std::cerr << "Inconsistent date format. Start and end dates must have the same format." << std::endl;
@@ -107,13 +116,14 @@ void weatherMain::getFilter(std::vector<std::vector<std::vector<std::string>>> d
         int minTemperature = std::stoi(minTemp);
         int maxTemperature = std::stoi(maxTemp);
 
+        // Ensure minTemp is less than maxTemp
         if (minTemperature >= maxTemperature)
         {
             std::cerr << "\nInvalid temperature range. Max temperature must be greater than min temperature." << std::endl;
             return;
         }
 
-        // Create a filterCandlestick object with the input values
+        // Create a filterCandlestick object with the specified parameters
         filterCandlestick filterObj{
             country,        // Country
             startDate,      // Start date
@@ -122,7 +132,7 @@ void weatherMain::getFilter(std::vector<std::vector<std::vector<std::string>>> d
             maxTemperature  // Maximum temperature
         };
 
-        // Apply the filter and store results
+        // Filter the datasets and store the result
         vectorOfCandlesticks = filterObj.filterDataset(datasets);
         UserFiltered = filterObj;
 
@@ -139,10 +149,12 @@ void weatherMain::showTableStats()
 {
     if (vectorOfCandlesticks.empty())
     {
+        // Notify the user if no data is available
         std::cout << "No weather data available to show on statistics table. Please apply a filter first." << std::endl;
     }
     else
     {
+        // Display the statistics table
         visualisation::printTable(vectorOfCandlesticks, UserFiltered);
     }
 }
@@ -152,10 +164,12 @@ void weatherMain::showCandlestick()
 {
     if (vectorOfCandlesticks.empty())
     {
+        // Notify the user if no data is available
         std::cout << "No weather data available to draw candlesticks. Please apply a filter first." << std::endl;
     }
     else
     {
+        // Display the candlestick visualization
         visualisation vis;
         vis.displayCandleSticks(vectorOfCandlesticks, UserFiltered);
     }
@@ -166,6 +180,7 @@ void weatherMain::getPrediction()
 {
     if (vectorOfCandlesticks.empty())
     {
+        // Notify the user if no data is available
         std::cout << "Please apply a filter first before generating the prediction." << std::endl;
     }
     else
@@ -173,6 +188,7 @@ void weatherMain::getPrediction()
         int predictionPeriod;
         std::string line;
 
+        // Prompt the user to enter the number of prediction periods
         std::cout << "Enter the number of prediction periods (integer only): ";
         std::getline(std::cin, line);
 
@@ -190,6 +206,7 @@ void weatherMain::getPrediction()
             return;
         }
 
+        // Generate predictions using the prediction class
         prediction::predictLinearRegression(vectorOfCandlesticks, UserFiltered, predictionPeriod);
     }
 }
@@ -204,6 +221,7 @@ int weatherMain::getUserOption()
     std::getline(std::cin, line);
     try
     {
+        // Parse the user's input as an integer
         userOption = std::stoi(line);
     }
     catch (const std::exception &e)
@@ -222,23 +240,28 @@ void weatherMain::processUserOption(int userOption, std::vector<std::vector<std:
     switch (userOption)
     {
     case 1:
+        // Display help information
         printHelp();
         break;
     case 2:
+        // Set a filter for the data
         getFilter(datasets);
         break;
     case 3:
+        // Display statistics table
         showTableStats();
         break;
     case 4:
+        // Visualize data as candlesticks
         showCandlestick();
         break;
     case 5:
+        // Generate predictions
         getPrediction();
         break;
     case 6:
         std::cout << "Exiting the Application" << std::endl;
-        std::exit(0);
+        std::exit(0); // Exit the application
     default:
         std::cout << "\nInvalid choice. Choose 1-6" << std::endl;
         break;
