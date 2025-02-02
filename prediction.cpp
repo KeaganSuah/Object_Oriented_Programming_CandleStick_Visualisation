@@ -112,19 +112,19 @@ void prediction::generatePredictions(std::vector<candleStick> &vectorOfCandlesti
         // Predict high, low, and open prices based on averages
         double predictedHigh = previousHigh + avgHighChange[periodIndex];
         double predictedLow = previousLow + avgLowChange[periodIndex];
-        double predictedOpen = previousClose + avgCloseChange[periodIndex];
+        double predictedClose = previousClose + avgCloseChange[periodIndex];
 
         // Increment the date by the calculated step
         std::string predictedTimestamp = incrementDate(lastTimestamp, i * dateIncrement);
 
         // Create a new candleStick object for the prediction
-        candleStick predictedCandle(predictedTimestamp, predictedOpen, predictedHigh, predictedLow, previousClose, vectorOfCandlesticks.back().country);
+        candleStick predictedCandle(predictedTimestamp, previousClose, predictedHigh, predictedLow, predictedClose, vectorOfCandlesticks.back().country);
 
         // Add the prediction to the vector
         vectorOfCandlesticks.push_back(predictedCandle);
 
         // Update previous values for the next prediction
-        previousClose = predictedOpen;
+        previousClose = predictedClose;
         previousHigh = predictedHigh;
         previousLow = predictedLow;
     }

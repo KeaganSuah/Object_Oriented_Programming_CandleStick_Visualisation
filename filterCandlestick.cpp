@@ -164,10 +164,10 @@ void filterCandlestick::storeToCandleStick(const std::string &period,
         // Create a new candleStick object and add it to the vector
         candleStick weatherData{
             period,
-            totalMean,
+            previousMean,
             totalMax,
             totalMin,
-            previousMean,
+            totalMean,
             candleStick::intToCountryType(country)};
 
         vectorOfCandlesticks.push_back(weatherData);
